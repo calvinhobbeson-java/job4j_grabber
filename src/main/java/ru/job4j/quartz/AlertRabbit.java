@@ -5,9 +5,8 @@ import org.quartz.impl.StdSchedulerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -23,15 +22,16 @@ public class AlertRabbit {
         try (InputStream in = AlertRabbit.class.getClassLoader().getResourceAsStream("rabbit.properties")) {
             properties.load(in);
         }
+        return properties;
     }
 
     public static Connection getConnection(Properties properties) throws ClassNotFoundException, SQLException {
         Class.forName(properties.getProperty("db.driver"));
-       return DriverManager.getConnection(
+        return DriverManager.getConnection(
                 properties.getProperty("db.url"),
                 properties.getProperty("db.username"),
                 properties.getProperty("db.password"));
-}
+    }
 
     public static void main(String[] args) throws IOException {
         Properties properties = getProperties();
@@ -65,10 +65,14 @@ public class AlertRabbit {
         }
 
         @Override
-        public void execute(JobExecutionContext context) throws JobExecutionException {
-            System.out.println("Rabbit runs here ...");
-            List<Long> store = (List<Long>) context.getJobDetail().getJobDataMap().get("store");
-            store.add(System.currentTimeMillis());
+        public void execute(JobExecutionContext context) {
+            Connection connection = (Connection) context.getJobDetail().getJobDataMap().get("connection");
+            try (PreparedStatement statement = connection.prepareStatement("insert into rabbit(created_date) values (?)")) {
+                statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+                statement.execute();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
         }
     }
 }

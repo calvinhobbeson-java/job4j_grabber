@@ -14,6 +14,13 @@ public class HabrCareerParse {
 
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
 
+    private String retrieveDescription(String link) throws IOException {
+        Connection connection = Jsoup.connect(link);
+        Document document = connection.get();
+        Elements desc = document.select(".style-ugc");
+            return desc.text();
+    }
+
     public static void main(String[] args) throws IOException {
         for (int pageNumber = 1; pageNumber <= 5; pageNumber++) {
             Connection connection = Jsoup.connect(PAGE_LINK + pageNumber);

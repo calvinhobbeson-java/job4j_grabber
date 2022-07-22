@@ -6,13 +6,18 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import ru.job4j.grabber.utils.DateTimeParser;
-import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class HabrCareerParse implements Parse {
+
+    public static final Integer PAGES = 5;
+
+    private static final Logger LOG = LoggerFactory.getLogger(HabrCareerParse.class.getName());
 
     private static final String SOURCE_LINK = "https://career.habr.com";
 
@@ -24,29 +29,43 @@ public class HabrCareerParse implements Parse {
         this.dateTimeParser = dateTimeParser;
     }
 
-    private String retrieveDescription(String link) throws IOException {
+    private String retrieveDescription(String link) {
         Connection connection = Jsoup.connect(link);
-        Document document = connection.get();
+        Document document;
+        try {
+            document = connection.get();
+        } catch (IOException e) {
+            LOG.error("Illegal argument exception", e);
+            throw new IllegalArgumentException();
+        }
         Elements desc = document.select(".style-ugc");
         return desc.text();
     }
 
-    public List<Post> list(String link) throws IOException {
-        HabrCareerDateTimeParser dateParser = new HabrCareerDateTimeParser();
+    private Post parsePost(Element row) {
+            Element titleElement = row.select(".vacancy-card__title").first();
+            Element linkElement = titleElement.child(0);
+            Element dateElement = row.select(".basic-date").first();
+            String vacancyName = titleElement.text();
+            String linkToVac = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
+            String date = dateElement.attr("datetime");
+            return new Post(vacancyName, linkToVac, retrieveDescription(SOURCE_LINK), dateTimeParser.parse(date));
+    }
+
+    public List<Post> list(String link) {
         List<Post> posts = new ArrayList<>();
-        for (int pageNumber = 1; pageNumber <= 5; pageNumber++) {
+        for (int pageNumber = 1; pageNumber <= PAGES; pageNumber++) {
             Connection connection = Jsoup.connect(PAGE_LINK + pageNumber);
-            Document document = connection.get();
+            Document document;
+            try {
+                document = connection.get();
+            } catch (IOException e) {
+                LOG.error("Illegal argument exception", e);
+                throw new IllegalArgumentException();
+            }
             Elements rows = document.select(".vacancy-card__inner");
-            rows.forEach(row -> {
-                Element titleElement = row.select(".vacancy-card__title").first();
-                Element linkElement = titleElement.child(0);
-                Element dateElement = row.select(".basic-date").first();
-                String vacancyName = titleElement.text();
-                String linkToVac = String.format("%s%s", SOURCE_LINK, linkElement.attr("href"));
-                String date = dateElement.attr("datetime");
-                posts.add(new Post(vacancyName, linkToVac, retrieveDescription(link)), dateParser.parse(date));
-            });
+            rows.forEach(row ->
+            posts.add(parsePost(row)));
         }
         return posts;
     }

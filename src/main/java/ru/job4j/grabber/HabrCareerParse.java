@@ -15,7 +15,7 @@ import java.util.List;
 
 public class HabrCareerParse implements Parse {
 
-    public static final Integer PAGES = 5;
+    public static final int PAGES = 5;
 
     private static final Logger LOG = LoggerFactory.getLogger(HabrCareerParse.class.getName());
 

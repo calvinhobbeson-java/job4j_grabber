@@ -27,16 +27,12 @@ public class PsqlStore implements Store, AutoCloseable {
     public PsqlStore(Properties cfg) {
         try {
             Class.forName(cfg.getProperty("jdbc.driver"));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
-        try {
             cnn = DriverManager.getConnection(
                     cfg.getProperty("url"),
                     cfg.getProperty("username"),
                     cfg.getProperty("password")
             );
-        } catch (SQLException e) {
+        } catch (Exception e) {
             LOG.error("SQL Exception", e);
             e.printStackTrace();
         }
@@ -108,11 +104,6 @@ public class PsqlStore implements Store, AutoCloseable {
         Properties cfg = new Properties();
         try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream("grabber.properties")) {
             cfg.load(in);
-            Class.forName(cfg.getProperty("driver-class-name"));
-        } catch (Exception e) {
-            LOG.error("SQL Exception", e);
-            e.printStackTrace();
-        }
         try (PsqlStore psqlStore = new PsqlStore(cfg)) {
             psqlStore.save(new Post("Programmist", "linkToVac",
                     "Programmist programmiruet", LocalDateTime.now()));
@@ -120,8 +111,9 @@ public class PsqlStore implements Store, AutoCloseable {
                     "On delaet drugie veschi, ne programmiruet", LocalDateTime.now()));
             psqlStore.getAll();
             psqlStore.findById(1);
+        }
         } catch (Exception e) {
-            LOG.error("SQL Exception", e);
+            LOG.error("Exception", e);
             e.printStackTrace();
         }
     }

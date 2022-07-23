@@ -15,6 +15,19 @@ public class PsqlStore implements Store, AutoCloseable {
 
     private Connection cnn;
 
+    public PsqlStore(Properties cfg) {
+        try {
+            Class.forName(cfg.getProperty("db.driver"));
+            cnn = DriverManager.getConnection(
+                    cfg.getProperty("db.url"),
+                    cfg.getProperty("db.username"),
+                    cfg.getProperty("db.password")
+            );
+        } catch (Exception e) {
+            LOG.error("SQL Exception", e);
+        }
+    }
+
     public Post fill(ResultSet resultSet) throws SQLException {
         return new Post(
                 resultSet.getInt("id"),
@@ -24,24 +37,11 @@ public class PsqlStore implements Store, AutoCloseable {
                 resultSet.getTimestamp("created").toLocalDateTime());
     }
 
-    public PsqlStore(Properties cfg) {
-        try {
-            Class.forName(cfg.getProperty("jdbc.driver"));
-            cnn = DriverManager.getConnection(
-                    cfg.getProperty("url"),
-                    cfg.getProperty("username"),
-                    cfg.getProperty("password")
-            );
-        } catch (Exception e) {
-            LOG.error("SQL Exception", e);
-            e.printStackTrace();
-        }
-    }
-
     @Override
     public void save(Post post) {
         try (PreparedStatement statement =
-                     cnn.prepareStatement("insert into posts(name, text, link, created) values(?, ?, ?, ?)",
+                     cnn.prepareStatement(
+                             "insert into posts(name, text, link, created) values(?, ?, ?, ?) on conflict(link) do nothing",
                              Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, post.getTitle());
             statement.setString(2, post.getDescription());
@@ -55,7 +55,6 @@ public class PsqlStore implements Store, AutoCloseable {
             }
         } catch (SQLException e) {
             LOG.error("SQL Exception", e);
-                e.printStackTrace();
             }
         }
 
@@ -70,7 +69,6 @@ public class PsqlStore implements Store, AutoCloseable {
             }
         } catch (SQLException e) {
             LOG.error("SQL Exception", e);
-            e.printStackTrace();
         }
         return posts;
     }
@@ -109,12 +107,11 @@ public class PsqlStore implements Store, AutoCloseable {
                     "Programmist programmiruet", LocalDateTime.now()));
             psqlStore.save(new Post("otherPosition", "linkToOtherPosition",
                     "On delaet drugie veschi, ne programmiruet", LocalDateTime.now()));
-            psqlStore.getAll();
-            psqlStore.findById(1);
+            System.out.println(psqlStore.getAll());
+            System.out.println(psqlStore.findById(1));
         }
         } catch (Exception e) {
             LOG.error("Exception", e);
-            e.printStackTrace();
         }
     }
 }

@@ -1,6 +1,8 @@
 package ru.job4j.grabber;
 
+import java.io.InputStream;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -65,7 +67,7 @@ public class PsqlStore implements Store, AutoCloseable {
     public List<Post> getAll() {
         List<Post> posts = new ArrayList<>();
         try (PreparedStatement statement = cnn.prepareStatement("select * from posts")) {
-            try(ResultSet resultSet = statement.executeQuery()) {
+            try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     posts.add((fill(resultSet)));
                 }
@@ -103,6 +105,24 @@ public class PsqlStore implements Store, AutoCloseable {
     }
 
     public static void main(String[] args) {
-
+        Properties cfg = new Properties();
+        try (InputStream in = PsqlStore.class.getClassLoader().getResourceAsStream("grabber.properties")) {
+            cfg.load(in);
+            Class.forName(cfg.getProperty("driver-class-name"));
+        } catch (Exception e) {
+            LOG.error("SQL Exception", e);
+            e.printStackTrace();
+        }
+        try (PsqlStore psqlStore = new PsqlStore(cfg)) {
+            psqlStore.save(new Post("Programmist", "linkToVac",
+                    "Programmist programmiruet", LocalDateTime.now()));
+            psqlStore.save(new Post("otherPosition", "linkToOtherPosition",
+                    "On delaet drugie veschi, ne programmiruet", LocalDateTime.now()));
+            psqlStore.getAll();
+            psqlStore.findById(1);
+        } catch (Exception e) {
+            LOG.error("SQL Exception", e);
+            e.printStackTrace();
+        }
     }
 }

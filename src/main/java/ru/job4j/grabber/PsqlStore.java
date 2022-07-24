@@ -86,7 +86,6 @@ public class PsqlStore implements Store, AutoCloseable {
             }
         }  catch (SQLException e) {
             LOG.error("SQL Exception", e);
-            e.printStackTrace();
         }
         return post;
     }

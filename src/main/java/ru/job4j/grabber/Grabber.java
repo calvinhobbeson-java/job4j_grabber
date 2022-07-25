@@ -54,10 +54,10 @@ public class Grabber implements Grab {
         @Override
         public void execute(JobExecutionContext context) throws JobExecutionException {
             JobDataMap map = context.getJobDetail().getJobDataMap();
+            final String PAGE_LINK = (String) map.get("link");
             Store store = (Store) map.get("store");
             Parse parse = (Parse) map.get("parse");
-            String pageLink = (String) map.get("link");
-            List<Post> postList = parse.list(pageLink);
+            List<Post> postList = parse.list(PAGE_LINK);
             postList.forEach(post -> store.save(post));
         }
     }
